@@ -2,7 +2,7 @@
 A fun and explainable guide to obtain metagenome-assembled genomes from raw reads. And even see what they are doing 😉
 
 <h1 align="center">Hi 👋, I'm Carlos Manso</h1>
-<h3 align="center">A passionate about polar micoecology that just started a PhD in microbiology</h3>
+<h3 align="center">A passionate about polar microbial ecology that just started a PhD in microbiology</h3>
 <img align="right" alt="Coding" width="400" src="https://i.pinimg.com/originals/5d/66/7a/5d667adf8daf1d76f3236bf28782ef4e.gif">
 <p align="left"> <a href="https://twitter.com/mansocarlos002" target="blank"><img src="https://img.shields.io/twitter/follow/mansocarlos002?logo=twitter&style=for-the-badge" alt="mansocarlos002" /></a> </p>
 
