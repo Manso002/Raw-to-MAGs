@@ -167,11 +167,39 @@ do
     fi
 done
 ````
-### Check the number of contigs and scaffolds:
+### Check quality of assemblies:
+
+We can evaluate the assemlies using BBMap's script **stats.sh**. But before that, it is recommended to see how many contigs or scaffolds we have above certain minimum length threshold. We will use seqmagik for performing the lenght filtering, and then just count sequence numbers using grep.
+
+```bash
+#!/bin/bash
+
+# Loop from 1 to 12
+for i in {1..12}; do
+  # Define input and output file paths
+  input_file="/home/meridian/ANETO/ANETO_FINAL/contigs_fasta/ANETO_${i}.fasta"
+  output_file="/home/meridian/ANETO/ANETO_FINAL/contigs_fasta/ANETO_${i}_1000.fna"
+
+  # Check if the input file exists
+  if [ -f "$input_file" ]; then
+    # Run seqmagick command
+    seqmagick convert --min-length 1000 "$input_file" "$output_file"
+    echo "Processed $input_file to $output_file"
+  else
+    echo "Input file $input_file does not exist"
+  fi
+done
+```
+
 We can take a look to the number of contigs/scaffold we have obtained from the assemblies:
 
 ```bash
-grep -c '>' ./ANETO_careful/*.fasta
+grep -c '>' ./ANETO_careful/*.fasta ./ANETO_careful/*.fna
+````
+### Now we can try stats.sh script:
+
+```bash
+stats.sh in= ./ANETO_careful/*.fna
 ````
 
 
