@@ -166,6 +166,7 @@ do
         echo "SPAdes completed successfully for sample $i"
     fi
 done
+conda deactivate
 ````
 ### Check quality of assemblies:
 
