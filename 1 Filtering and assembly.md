@@ -111,7 +111,7 @@ trimmomatic PE <keyword flags> <sequence input> <sequence output> SLIDINGWINDOW:
 trimmomatic PE <keyword flags> <sequence input> <sequence output> MINLEN:80 SLIDINGWINDOW:4:30
 ````
 In the first run, we would not expect any sequence shorter than 80 base pairs to exist in the output files. However, we might encounter them in the second command. This is because in the second command we remove sequences shorter than 80 base pairs, **then** perform quality trimming. If a sequence is trimmed to a length shorter than 80 base pairs **after** trimming, the MINLEN filtering does not execute a second time. In the first instance, we do not perform trimming **before** size selection, so any reads that start longer than 80 base pairs, but are trimmed to under 80 base pairs during quality trimming will be caught in the MINLEN run.
-# 2. Assembling contigs
+# 2. Assembling reads -> contigs
 ---
 We are going to use [SPAdes](https://github.com/ablab/spades) one of the most popular de Bruijn graph de novo assemblers. 
 
