@@ -1,5 +1,5 @@
 # Raw-to-MAGs
-A fun and explainable guide to obtain metagenome-assembled genomes from raw reads. And even see what they are doing 😉
+Welcome to this github project, where I will take you on a detailed journey through the fascinating process of metagenome assembly. From sequencing raw reads to reconstructing metagenome-assembled genomes (MAGs), we'll explore each crucial step to better understand the microbial diversity in various environmental samples. We'll also cover how to assign taxonomy and genetic functionality to MAGs, providing a comprehensive view of microbial communities and their biological potential. Join me on this scientific adventure and discover the hidden microbial world within the data! I am using this project as a way to learn and to establish the knowledge I am acquiring as I progress in the preparation of my recently started doctoral thesis. So any feedback will be more than welcome 😉
 
 <h1 align="center">Hi 👋, I'm Carlos Manso</h1>
 <h3 align="center">A passionate about polar microbial ecology that just started a PhD in microbiology</h3>
