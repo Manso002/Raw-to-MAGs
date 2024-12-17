@@ -154,7 +154,7 @@ do
     R2="A_${i}_R2_qf_paired.fastq.gz"
     
     # Output directory
-    output_dir="ANETO_careful_${i}"
+    output_dir="A_careful_${i}"
     
     # Run SPAdes
     spades.py --careful -t 2 -1 $R1 -2 $R2 -o $output_dir
