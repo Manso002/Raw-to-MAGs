@@ -26,13 +26,13 @@ GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
 So, the easy way of counting the number of reads in a file is using wc linux command (word count):
 
 ```bash
-wc -l ANETO_1_R1.fastq
-wc -l ANETO_1_R2.fastq
+wc -l A_1_R1.fastq
+wc -l A_1_R2.fastq
 ````
 -l option is applied to count the number of lines. However, we have to divide by 4 to get the number of reads. To avoid this, we can apply some piping:
 ```bash
-wc -l ANETO_1_R1.fastq | awk '{print $1/4}' #37560016
-wc -l ANETO_1_R2.fastq | awk '{print $1/4}' #37560016
+wc -l A_1_R1.fastq | awk '{print $1/4}' #37560016
+wc -l A_1_R2.fastq | awk '{print $1/4}' #37560016
 ````
 
 ### Check sequence quality with *FastQC*
@@ -45,9 +45,9 @@ conda install -c bioconda fastqc -y
 ````
 Now, run the program to check our reads:
 ```bash
-mkdir ANETO_quality_reads
-fastqc ANETO_1_R1.fastq.gz -o ANETO_quality_reads/
-fastqc ANETO_1_R2.fastq.gz -o ANETO_quality_reads/
+mkdir A_quality_reads
+fastqc A_1_R1.fastq.gz -o A_quality_reads/
+fastqc A_1_R2.fastq.gz -o A_quality_reads/
 ````
 >NOTE: In order to repeat this process with all the samples (12) we can run the command manually or use a loop. We will use them later on.
 ```bash 
@@ -78,12 +78,12 @@ Running *trimmomatic* We will create a loop file saved as run_trimmomatic.sh. Do
 for i in {1..12}
 do
     # Construct file names
-    R1="ANETO_${i}_R1.fastq.gz"
-    R2="ANETO_${i}_R2.fastq.gz"
-    R1_paired="ANETO_${i}_R1_qf_paired.fastq.gz"
-    R1_unpaired="ANETO_${i}_R1_qf_unpaired.fastq.gz"
-    R2_paired="ANETO_${i}_R2_qf_paired.fastq.gz"
-    R2_unpaired="ANETO_${i}_R2_qf_unpaired.fastq.gz"
+    R1="A_${i}_R1.fastq.gz"
+    R2="A_${i}_R2.fastq.gz"
+    R1_paired="A_${i}_R1_qf_paired.fastq.gz"
+    R1_unpaired="A_${i}_R1_qf_unpaired.fastq.gz"
+    R2_paired="A_${i}_R2_qf_paired.fastq.gz"
+    R2_unpaired="A_${i}_R2_qf_unpaired.fastq.gz"
 
     # Run Trimmomatic
     trimmomatic PE -phred33 $R1 $R2 $R1_paired $R1_unpaired $R2_paired $R2_unpaired SLIDINGWINDOW:4:30 MINLEN:80
@@ -150,8 +150,8 @@ do
     echo "Running SPAdes for sample $i"
     
     # Construct the input file names
-    R1="ANETO_${i}_R1_qf_paired.fastq.gz"
-    R2="ANETO_${i}_R2_qf_paired.fastq.gz"
+    R1="A_${i}_R1_qf_paired.fastq.gz"
+    R2="A_${i}_R2_qf_paired.fastq.gz"
     
     # Output directory
     output_dir="ANETO_careful_${i}"
@@ -178,8 +178,8 @@ We can evaluate the assemlies using BBMap's script **stats.sh**. But before that
 # Loop from 1 to 12
 for i in {1..12}; do
   # Define input and output file paths
-  input_file="/home/meridian/ANETO/ANETO_FINAL/contigs_fasta/ANETO_${i}.fasta"
-  output_file="/home/meridian/ANETO/ANETO_FINAL/contigs_fasta/ANETO_${i}_1000.fna"
+  input_file="/home/meridian/A/A_FINAL/contigs_fasta/A_${i}.fasta"
+  output_file="/home/meridian/A/A_FINAL/contigs_fasta/A_${i}_1000.fna"
 
   # Check if the input file exists
   if [ -f "$input_file" ]; then
@@ -195,12 +195,12 @@ done
 We can take a look to the number of contigs/scaffold we have obtained from the assemblies:
 
 ```bash
-grep -c '>' ./ANETO_careful/*.fasta ./ANETO_careful/*.fna
+grep -c '>' ./A_careful/*.fasta ./A_careful/*.fna
 ````
 ### Now we can try stats.sh script:
 
 ```bash
-stats.sh in= ./ANETO_careful/*.fna
+stats.sh in= ./A_careful/*.fna
 ````
 
 
