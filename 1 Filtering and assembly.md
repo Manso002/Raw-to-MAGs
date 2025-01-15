@@ -111,6 +111,42 @@ trimmomatic PE <keyword flags> <sequence input> <sequence output> SLIDINGWINDOW:
 trimmomatic PE <keyword flags> <sequence input> <sequence output> MINLEN:80 SLIDINGWINDOW:4:30
 ````
 In the first run, we would not expect any sequence shorter than 80 base pairs to exist in the output files. However, we might encounter them in the second command. This is because in the second command we remove sequences shorter than 80 base pairs, **then** perform quality trimming. If a sequence is trimmed to a length shorter than 80 base pairs **after** trimming, the MINLEN filtering does not execute a second time. In the first instance, we do not perform trimming **before** size selection, so any reads that start longer than 80 base pairs, but are trimmed to under 80 base pairs during quality trimming will be caught in the MINLEN run.
+
+## Removal of human genomes (Bowtie 2)
+Human contamination is very frequent, as humans prepare and manipulate the samples before being sequenced. In some cases, the genome of other organisms, such as mouse or monkey, should be used instead of human, depending on the experimental set. To perform short read alignment we are going to use Bowtie2. There are other popular aligners such as BWA, but Bowtie2 parameters are easy to understand and modify.
+
+Before preforming the alignment, Bowtie2 requires the preparation of an index containing the reference sequences to align against. 
+
+```bash
+conda create -n bowtie2 -c bioconda bowtie2 -y
+```
+**Decontamination human reads**
+
+The file containing the human reads can be downloaded from [Zenodo](https://zenodo.org/records/1208052). Then, we build the index:
+
+```bash
+wget https://zenodo.org/records/1208052/files/hg19_main_mask_ribo_animal_allplant_allfungus.fa.gz?download=1
+bowtie2-build hg19_main_mask_ribo_animal_allplant_allfungus.fa.gz human_cds
+````
+**Aligning reads against human reads**
+
+```bash
+for i in {1..12}; do
+  sample="A_${i}"
+  bowtie2 -x human_cds \
+    -1 ${sample}_R1_qf_paired.fastq \
+    -2 ${sample}_R2_qf_paired.fastq \
+    --un-conc ${sample}_qf_paired_nohuman_R%.fastq \
+    -S ${sample}_tmp.sam
+done
+```
+Now we can count clean reads
+
+```bash
+wc -l *_qf_paired_nohuman* | awk '{print $1/4}'
+````
+
+
 # 2. Assembling reads -> contigs
 ---
 We are going to use [SPAdes](https://github.com/ablab/spades) one of the most popular de Bruijn graph de novo assemblers. 
@@ -119,7 +155,7 @@ This assembler has specific assembly protocols for different experimental set (-
 
 Another important option is -k flag with which we can define the kmer length to use in the assembly. If we do not provide a list of kmers, the program will select automatically three of them based on average reads length and perfoms a combined assembly. Nowadays, with this modern assembler it is better to allow the program to choose the best kmers, but at the beginning of the genomic era researches had to choose them by making multiple assemblies. As a general rule, kmers have to be smaller than average read length and must be odd and less than 128 (althougth other assemblers can use longer kmer sizes).
 
-Awkwardly, while SPAdes accepts multiple input libreries in a single assembly, this behaviour does not work with the --meta flag enabled, which would be the desire flag to use in our samples. Sadly, our working station can't handle the assembly of our samples because of how big our fasta files are (nearly 300 gb in total, decompressed). **This is why we are going to assemble each sample sepparetly with the --careful flag**. We also could use --isolate flag, but literature shows that --careful flag gives better results.
+Awkwardly, while SPAdes accepts multiple input libreries in a single assembly, this behaviour does not work with the --meta flag enabled, which would be the desire flag to use in our samples. **This is why we are going to assemble each sample sepparetly with the --careful flag**. We also could use --isolate flag, but literature shows that --careful flag gives better results.
 
 If we wanted to use --meta flag, we would need to concatenate R1 files and R2 files separetly.
 
@@ -154,53 +190,77 @@ do
     R2="A_${i}_R2_qf_paired.fastq.gz"
     
     # Output directory
-    output_dir="A_careful_${i}"
+    output_dir="Assembly_careful/A_${i}_careful"
     
     # Run SPAdes
     spades.py --careful -t 2 -1 $R1 -2 $R2 -o $output_dir
-    
-    # Check if SPAdes ran successfully
-    if [ $? -ne 0 ]; then
-        echo "SPAdes failed for sample $i"
-    else
-        echo "SPAdes completed successfully for sample $i"
-    fi
 done
-conda deactivate
 ````
-### Check quality of assemblies:
-
-We can evaluate the assemlies using BBMap's script **stats.sh**. But before that, it is recommended to see how many contigs or scaffolds we have above certain minimum length threshold. We will use seqmagik for performing the lenght filtering, and then just count sequence numbers using grep.
-
-```bash
-#!/bin/bash
-
-# Loop from 1 to 12
-for i in {1..12}; do
-  # Define input and output file paths
-  input_file="/home/meridian/A/A_FINAL/contigs_fasta/A_${i}.fasta"
-  output_file="/home/meridian/A/A_FINAL/contigs_fasta/A_${i}_1000.fna"
-
-  # Check if the input file exists
-  if [ -f "$input_file" ]; then
-    # Run seqmagick command
-    seqmagick convert --min-length 1000 "$input_file" "$output_file"
-    echo "Processed $input_file to $output_file"
-  else
-    echo "Input file $input_file does not exist"
-  fi
+Spades is also really useful when working with isolate genomes. We can add the flag --isolate and then compare what assembly turned "better" :
+```bash 
+mkdir Assembly_isolate
+# List of indices you want to iterate over
+for i in {1..12} # Change this range as needed
+do
+    echo "Running SPAdes for sample $i"
+    
+    # Construct the input file names
+    R1="A_${i}_R1_qf_paired.fastq.gz"
+    R2="A_${i}_R2_qf_paired.fastq.gz"
+    
+    # Output directory
+    output_dir="/Assembly_isolate/A_${i}_isolate"
+    
+    # Run SPAdes
+    spades.py --isolate -t 2 -1 $R1 -2 $R2 -o $output_dir
 done
 ```
 
+### Check quality of assemblies:
+
+We can evaluate the assemlies using longMeta-summary (Varliero et al., 2021). [See installation](https://github.com/gvMicroarctic/LongMeta). But before that, it is recommended to see how many contigs or scaffolds we have. We can count sequence numbers using grep.
+It is recommended to have all assemblies (fasta files and scaffolds) in the same folder. To reduce redundancy and save a bit of disk space, we are going to use symbolic links:
+```bash
+mkdir Quast # This folder will be useful for later
+ln -rs ./A_1_careful-contigs.fasta ./Quast/A_1_careful-contigs.fasta
+ln -rs ./A_1_careful-scaffolds.fasta ./Quast/A_1_careful-scaffolds.fasta
+ln -rs ./A_1_isolate-contigs.fasta ./Quast/A_1_isolate-contigs.fasta
+ln -rs ./A_1_isolate-scaffolds.fasta ./Quast/A_1_isolate-scaffolds.fasta
+# Repeat with all assemblies or use a for loop ;)
+```
 We can take a look to the number of contigs/scaffold we have obtained from the assemblies:
+```bash
+grep -c '>' ./Quast/*.fasta
+````
+### longMeta-summary (Varliero et al., 2021):
 
 ```bash
-grep -c '>' ./A_careful/*.fasta ./A_careful/*.fna
-````
-### Now we can try stats.sh script:
-
+for file in ./Quast/*.fasta; do longMeta-summary --assembly-input "$file" >> assemblies_stats.txt; done
+```
+The downside of longMeta-summary is that it doesn't tell us the % of contigs above a certain length. **Bbmap's stats.sh** can do that. So if we wanted that metric, we can run stats.sh on our assemblies:
 ```bash
-stats.sh in= ./A_careful/*.fna
+for file in /Quast/*.fasta; do bash ./stats.sh in= "$file" >> assemblies_results_bbmap.txt; done
+```
+Ok, we have our stats on every contig and scaffold file with both spades methods but, how do we chose one assembly? There is actually no right answer. There are some general things we can look at, like N50 or largest contig, or fraction of reads that successfully recruit to our assembly. But for one, these don't really have any solid context to know if they're "good" or not unsless we're comparing multiple assemblies of the same data; and two, we can have metagenomic assemblies with "worse" overall summary statistics, but that might enable us to recover more high-quality bins than an assembly with "better" summary statistics. Having a reference genome, can make things a lot easier. 
+
+*From now on, sample names will be different, since we want to work with metagenomes from a bunch of Tolypothrix isolates*
+
+## Comparing assemblies - QUAST
+A better and more complete way of making assebmblies comparision is by using dedicated tools such as [QUAST](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://github.com/ablab/quast&ved=2ahUKEwiX0-q-vPeKAxWZSfEDHXQkG48QFnoECAwQAQ&usg=AOvVaw3ngoxAk8Wa13hhRzdGn08y).
+### Installing QUAST
+We must create a new enviroment
+```bash
+# conda deactivate first
+conda create -n quast -c bioconda quast -y
+conda activate quast
 ````
+*Note: We don't have a reference genome of our isolates. Either way, I am going to explain how it would be done in case we had one*
 
-
+We can provide QUAST with all of our assemblies, a fasta file of our reference genome, and a .gff (**g**eneral **f**eature **f**ormat) file of our reference genome. I downloaded two reference files for our *Tolypothrix sp.* [PCC 7712](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_025860405.1/) from NCBI. Now we can run QUAST:
+```bash
+cd Quast
+quast -r Tolyp_ref.fna -g Tolyp_ref.gff *.fasta
+conda deactivate
+````
+We can see the report.html to see how well we did. Genome fraction (%) values are low. This means our assemblies have other bacterial genomes in it. Since we know this, we will proceed with careful spades assemblies for both samples. 
+We could trim our samples even more and reduce our coverage. But for now, we are doing good. 
